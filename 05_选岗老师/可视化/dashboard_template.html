@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{USER_NAME}}岗位投递看板</title>
+<style>
+:root {
+  --crx-blue:#2563eb; --crx-cyan:#06b6d4; --crx-indigo:#4f46e5;
+  --text:#334155; --text-strong:#0f172a; --text-muted:#64748b;
+  --border:rgba(148,163,184,.28); --card-bg:rgba(255,255,255,.78);
+  --soft-blue:rgba(219,234,254,.94);
+  --grad-title:linear-gradient(105deg,#0f172a 12%,#2563eb 58%,#0891b2 95%);
+  --shadow:0 14px 34px -30px rgba(15,23,42,.4);
+  --shadow-hover:0 20px 44px -26px rgba(37,99,235,.42);
+}
+html[data-theme="dark"] {
+  --text:#cbd5e1; --text-strong:#f8fafc; --text-muted:#94a3b8;
+  --border:rgba(100,116,139,.32); --card-bg:rgba(15,23,42,.62);
+  --soft-blue:rgba(30,64,175,.90);
+  --grad-title:linear-gradient(105deg,#f8fafc 12%,#60a5fa 58%,#22d3ee 95%);
+  --shadow:0 14px 34px -28px rgba(0,0,0,.6);
+  --shadow-hover:0 20px 44px -24px rgba(37,99,235,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--text); min-height:100vh; padding-bottom:50px;
+  background:radial-gradient(900px 520px at 12% 3%,rgba(37,99,235,.10),transparent 62%),
+    radial-gradient(850px 500px at 92% 8%,rgba(6,182,212,.09),transparent 58%),#f8fafc;
+  background-attachment:fixed; transition:background .25s ease,color .25s ease;
+}
+html[data-theme="dark"] body{
+  background:radial-gradient(900px 520px at 12% 3%,rgba(37,99,235,.16),transparent 62%),
+    radial-gradient(850px 500px at 92% 8%,rgba(6,182,212,.12),transparent 58%),#0b1120;
+}
+a{color:#2563eb;text-decoration:none;} a:hover{text-decoration:underline;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+
+/* 顶栏 */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 0;}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:17px;color:var(--text-strong);}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--crx-blue),var(--crx-cyan));box-shadow:0 0 0 4px rgba(37,99,235,.14);}
+.theme-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card-bg);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
+.theme-btn:hover{transform:translateY(-1px);border-color:rgba(59,130,246,.45);box-shadow:0 10px 24px -14px rgba(37,99,235,.5);}
+
+/* Hero */
+.hero{position:relative;overflow:hidden;margin:18px 0 22px;padding:clamp(1.6rem,4vw,2.6rem);border:1px solid rgba(59,130,246,.20);border-radius:1.6rem;background:radial-gradient(circle at 85% 10%,rgba(6,182,212,.20),transparent 30%),radial-gradient(circle at 6% 90%,rgba(79,70,229,.16),transparent 34%),linear-gradient(135deg,rgba(255,255,255,.90),rgba(239,246,255,.86));box-shadow:0 24px 60px -32px rgba(15,23,42,.35);isolation:isolate;}
+html[data-theme="dark"] .hero{border-color:rgba(96,165,250,.24);background:radial-gradient(circle at 85% 10%,rgba(6,182,212,.16),transparent 30%),radial-gradient(circle at 6% 90%,rgba(79,70,229,.20),transparent 34%),linear-gradient(135deg,rgba(15,23,42,.94),rgba(17,24,39,.90));}
+.hero::before{content:"";position:absolute;inset:-45%;z-index:-1;background:conic-gradient(from 90deg,transparent,rgba(37,99,235,.08),transparent,rgba(6,182,212,.08),transparent);animation:heroRotate 18s linear infinite;}
+@keyframes heroRotate{to{transform:rotate(360deg);}}
+.hero .badge{display:inline-flex;margin-bottom:12px;padding:5px 14px;border:1px solid rgba(37,99,235,.20);border-radius:999px;color:#1d4ed8;background:rgba(219,234,254,.70);font-size:12px;font-weight:700;letter-spacing:.08em;}
+html[data-theme="dark"] .hero .badge{color:#93c5fd;background:rgba(30,64,175,.26);}
+.hero h1{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.1;letter-spacing:-.03em;background:var(--grad-title);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero p{margin-top:12px;max-width:56rem;color:var(--text-muted);font-size:14px;line-height:1.8;}
+
+/* Tab */
+.tabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap;}
+.tab{padding:9px 26px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-muted);background:var(--card-bg);border:1px solid var(--border);transition:all .16s ease;}
+.tab:hover{border-color:rgba(59,130,246,.45);}
+.tab.active{color:#fff;border-color:transparent;font-weight:700;background:linear-gradient(135deg,var(--crx-blue),var(--crx-indigo));box-shadow:0 12px 26px -12px rgba(37,99,235,.6);}
+.view{display:none;}
+.view.active{display:block;animation:fadeIn .28s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* 统计卡（可点击） */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:18px;}
+.stat{position:relative;overflow:hidden;padding:16px 18px;border:1px solid var(--border);border-radius:1.1rem;background:var(--card-bg);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;}
+.stat:hover{transform:translateY(-3px);border-color:rgba(59,130,246,.45);box-shadow:0 18px 40px -22px rgba(37,99,235,.5);}
+.stat .num{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1;}
+.stat .lbl{margin-top:3px;font-size:12px;color:var(--text-muted);}
+.stat .hint{position:absolute;right:10px;top:8px;font-size:10px;color:var(--text-muted);opacity:.65;font-weight:600;}
+.stat.blue .num{color:#2563eb;} .stat.green .num{color:#16a34a;} .stat.red .num{color:#dc2626;} .stat.orange .num{color:#ea580c;} .stat.gray .num{color:var(--text-muted);}
+
+/* 卡片 */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:900px){.grid{grid-template-columns:1fr;}}
+.box{border:1px solid var(--border);border-radius:1.25rem;background:var(--card-bg);padding:18px;box-shadow:var(--shadow);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;}
+.box:hover{transform:translateY(-2px);border-color:rgba(59,130,246,.35);box-shadow:var(--shadow-hover);}
+.box.wide{grid-column:1/-1;}
+.box h3{font-size:15px;font-weight:750;color:var(--text-strong);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.box h3::before{content:"";width:4px;height:15px;border-radius:2px;background:linear-gradient(180deg,var(--crx-blue),var(--crx-cyan));}
+.sub{color:var(--text-muted);font-size:12px;margin-top:10px;line-height:1.7;}
+
+/* 条形图 */
+.hbar .row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.hbar .row .name{width:100px;font-size:13px;color:var(--text-muted);text-align:right;flex:none;}
+.hbar .row .bar{flex:1;background:rgba(148,163,184,.14);border-radius:6px;height:16px;overflow:hidden;}
+.hbar .row .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--crx-blue),var(--crx-cyan));transition:width .5s ease;}
+.hbar .row .val{width:44px;font-size:13px;font-weight:700;flex:none;color:var(--text-strong);}
+
+/* 漏斗 */
+.funnel .frow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.funnel .frow .lbl{width:76px;font-size:13px;color:var(--text-muted);text-align:right;flex:none;}
+.funnel .frow .seg{height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;white-space:nowrap;background:linear-gradient(90deg,var(--crx-blue),var(--crx-cyan));transition:width .5s ease;}
+.funnel .frow .pct{font-size:12px;color:var(--text-muted);width:72px;flex:none;}
+.funnel .frow .empty{height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(148,163,184,.14);color:var(--text-muted);font-size:13px;font-weight:700;}
+
+/* 筛选栏 */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;align-items:center;}
+.filters input,.filters select{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card-bg);color:var(--text);font-size:13px;outline:none;transition:border-color .15s ease;}
+.filters input:focus,.filters select:focus{border-color:rgba(59,130,246,.55);}
+.filters .search{flex:1;min-width:180px;}
+.filters .count{margin-left:auto;font-size:12px;color:var(--text-muted);white-space:nowrap;}
+
+/* 表格（模块内滚动条） */
+.tbl-wrap{overflow:auto;max-height:360px;border:1px solid rgba(148,163,184,.14);border-radius:.8rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{position:sticky;top:0;z-index:1;background:var(--soft-blue);backdrop-filter:blur(6px);}
+th{color:var(--text-strong);font-weight:700;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{filter:brightness(.97);}
+th .arr{font-size:10px;opacity:.85;margin-left:2px;}
+td{padding:9px 12px;border-bottom:1px solid rgba(148,163,184,.14);white-space:nowrap;}
+/* 明细表：内容放不下时自动换行，避免横向滚动条 */
+[data-tbl] td,[data-tbl] th{white-space:normal;word-break:break-all;line-height:1.55;}
+[data-tbl] td.co,[data-tbl] td .pri,[data-tbl] td .tag,[data-tbl] td a{white-space:nowrap;}
+tr:hover td{background:rgba(219,234,254,.24);}
+html[data-theme="dark"] tr:hover td{background:rgba(30,64,175,.14);}
+td.co{font-weight:650;color:var(--text-strong);}
+.muted{color:var(--text-muted);}
+
+/* 状态标签 */
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.5;}
+.tag.green{background:rgba(34,197,94,.13);color:#16a34a;}
+.tag.red{background:rgba(248,113,113,.14);color:#dc2626;}
+.tag.orange{background:rgba(251,146,60,.15);color:#ea580c;}
+.tag.blue{background:rgba(96,165,250,.15);color:#2563eb;}
+.tag.gray{background:rgba(148,163,184,.16);color:var(--text-muted);}
+.pri{font-weight:700;font-size:12px;}
+.pri.highest{color:#dc2626;} .pri.high{color:#ea580c;} .pri.normal{color:var(--text-muted);} .pri.low{color:#94a3b8;}
+.stars{color:#ea580c;font-size:12px;}
+.empty-state{padding:26px;text-align:center;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:1rem;}
+
+/* Modal */
+.modal-mask{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.42);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .18s ease;}
+.modal-mask.show{opacity:1;pointer-events:auto;}
+.modal{width:min(760px,94vw);max-height:82vh;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:1.2rem;background:var(--card-bg);box-shadow:0 30px 80px -30px rgba(15,23,42,.55);transform:translateY(10px);transition:transform .18s ease;}
+.modal-mask.show .modal{transform:none;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);}
+.modal-head h4{font-size:15px;color:var(--text-strong);}
+.modal-close{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;}
+.modal-close:hover{background:rgba(148,163,184,.18);}
+.modal-body{padding:14px 18px 18px;overflow:auto;}
+.modal-body .tbl-wrap{max-height:56vh;}
+
+footer{text-align:center;color:var(--text-muted);font-size:12px;margin-top:30px;line-height:1.8;}
+
+@media (max-width:720px){
+  .hero{border-radius:1.1rem;padding:1.3rem;}
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .filters .count{margin-left:0;width:100%;}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>{{USER_NAME}} · 岗位投递看板</div>
+  <button class="theme-btn" id="themeBtn" type="button">🌙 深色</button>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">JOB · DASHBOARD</div>
+    <h1>{{USER_NAME}}岗位投递看板</h1>
+    <p id="heroMeta">数据截至 — · 由选岗老师维护 · 数据源：投递总表（Excel）。支持搜索、筛选、排序与深色模式，点击统计卡可查看明细。</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-view="view-soe">央国企</div>
+    <div class="tab" data-view="view-prv">私企</div>
+  </div>
+
+  <div id="view-soe" class="view active"></div>
+  <div id="view-prv" class="view"></div>
+
+  <footer>
+    投递状态机：已投 → 简历筛选 → 测评/笔试 → 面试 → Offer<br>
+    由「秋招求职AI团队」自动生成 · update_dashboard.py 更新
+  </footer>
+</div>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <div class="modal-head"><h4 id="modalTitle"></h4><button class="modal-close" id="modalClose" type="button">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============ 数据（由 update_dashboard.py 注入） ============ */
+window.DASH = /*__DATA__*/ null;
+
+/* ============ 工具 ============ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = (n, total) => total ? (n/total*100).toFixed(2) + '%' : '-';
+const isDead = st => !!st && st.endsWith('挂');
+const progressed = st => !!st && !st.endsWith('挂') && st !== '流程中';
+const linkHtml = l => l ? `<a href="${l}" target="_blank" rel="noopener">链接</a>` : '<span class="muted">-</span>';
+/* 新增岗位情报表格 */
+function tipsHtml(tips){
+  if (!tips.length) return `<div class="empty-state">暂无新增岗位情报 · 选岗老师维护 05_选岗老师/岗位情报/新增岗位情报.xlsx 后自动展示</div>`;
+  const head = ['公司','性质','届别','岗位','地点','截止/窗口','匹配度','备注','入口'].map(h=>`<th>${h}</th>`).join('');
+  const body = tips.map(r=>`<tr><td class="co">${esc(r['公司'])}</td><td>${esc(r['性质']||'-')}</td><td>${esc(r['届别']||'-')}</td><td>${esc(r['岗位']||'-')}</td><td>${esc(r['地点']||'-')}</td><td>${esc(r['截止窗口']||'-')}</td><td><span class="stars">${esc(r['匹配度']||'-')}</span></td><td>${esc(r['备注']||'-')}</td><td>${linkHtml(r['入口'])}</td></tr>`).join('');
+  return `<div class="tbl-wrap"><table data-tbl="tips"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+function tagHtml(st){
+  if (!st) return `<span class="tag gray">${esc(st)}</span>`;
+  if (/offer/i.test(st)) return `<span class="tag green">${esc(st)}</span>`;
+  if (st.endsWith('挂')) return `<span class="tag red">${esc(st)}</span>`;
+  if (st.endsWith('过') || /已完成|完成/.test(st)) return `<span class="tag green">${esc(st)}</span>`;
+  if (/待参加/.test(st)) return `<span class="tag orange">${esc(st)}</span>`;
+  if (/已参加|流程中/.test(st) || /^(测评|简历|笔试)$/.test(st)) return `<span class="tag blue">${esc(st)}</span>`;
+  return `<span class="tag gray">${esc(st)}</span>`;
+}
+function priHtml(p){
+  const cls = p==='最高'?'highest':p==='高'?'high':p==='一般'?'normal':'low';
+  return `<span class="pri ${cls}">${esc(p)}</span>`;
+}
+function statCard(theme, num, lbl, q){
+  return `<div class="stat ${theme}" data-q="${q}"><div class="hint">明细▸</div><div class="num">${num}</div><div class="lbl">${lbl}</div></div>`;
+}
+function sortRows(rows, key, asc){
+  const priW = {'最高':0,'高':1,'一般':2,'低':3};
+  const w = key==='pri' ? {0:priW,1:0} : null;
+  return [...rows].sort((a,b)=>{
+    let av = a[key], bv = b[key];
+    if (key==='pri') { av = priW[av] ?? 9; bv = priW[bv] ?? 9; }
+    else { av = String(av ?? ''); bv = String(bv ?? ''); }
+    const c = typeof av === 'number' ? av-bv : av.localeCompare(bv,'zh');
+    return c * (asc ? 1 : -1);
+  });
+}
+function filterRows(rows, f){
+  return rows.filter(r=>{
+    if (f.st && f.st!=='all' && r.st !== f.st) return false;
+    if (f.dir && f.dir!=='all' && r.dir !== f.dir) return false;
+    if (f.batch && f.batch!=='all' && r.batch !== f.batch) return false;
+    if (f.win && f.win!=='all' && r.win !== f.win) return false;
+    if (f.q) { const hay = [r.co,r.job,r.loc,r.dir,r.batch,r.st,r.win].join(' '); if (!hay.includes(f.q)) return false; }
+    return true;
+  });
+}
+/* 通用可筛选排序表格渲染 */
+window.TBL_STATES = window.TBL_STATES || {};
+function renderTable(containerId, state, cols, rowHtml){
+  TBL_STATES[containerId] = { state, cols, rowHtml };
+  const rows = filterRows(state.rows, state.f);
+  const sorted = sortRows(rows, state.sort.key, state.sort.asc);
+  const filterBar = state.fields.map(fd=>{
+    if (fd.type==='search') return `<input class="search" id="${containerId}-q" type="text" placeholder="🔍 ${fd.ph || '搜索…'}">`;
+    if (fd.type==='select') return `<select id="${containerId}-${fd.key}"><option value="all">${fd.label}</option>${fd.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    return '';
+  }).join('');
+  const ths = cols.map(c=>{
+    const arr = c.key === state.sort.key ? `<span class="arr">${state.sort.asc ? '▲' : '▼'}</span>` : '';
+    return `<th data-k="${c.key}">${c.label}${arr}</th>`;
+  }).join('');
+  const body = sorted.length ? sorted.map(rowHtml).join('') : `<tr><td colspan="${cols.length}"><div class="empty-state">没有符合条件的记录，换个筛选条件试试</div></td></tr>`;
+  $(containerId).innerHTML = `
+    <div class="filters">${filterBar}<span class="count">显示 ${sorted.length} / ${state.rows.length} 条</span></div>
+    <div class="tbl-wrap" data-tbl="${containerId}"><table><thead><tr>${ths}</tr></thead><tbody>${body}</tbody></table></div>`;
+  if (state.fields.some(f=>f.type==='search')) $(containerId+'-q').addEventListener('input', e=>{ state.f.q = e.target.value.trim(); renderTable(containerId,state,cols,rowHtml); });
+  state.fields.filter(f=>f.type==='select').forEach(fd=>{
+    $(containerId+'-'+fd.key).addEventListener('change', e=>{ state.f[fd.key] = e.target.value; renderTable(containerId,state,cols,rowHtml); });
+  });
+}
+/* 表头排序：容器级事件委托，重渲染后依然有效 */
+document.addEventListener('click', e=>{
+  const th = e.target.closest && e.target.closest('th[data-k]');
+  if (!th) return;
+  const wrap = th.closest('[data-tbl]');
+  if (!wrap) return;
+  const t = TBL_STATES[wrap.dataset.tbl];
+  if (!t) return;
+  const k = th.dataset.k;
+  if (t.state.sort.key === k) t.state.sort.asc = !t.state.sort.asc; else { t.state.sort.key = k; t.state.sort.asc = true; }
+  renderTable(wrap.dataset.tbl, t.state, t.cols, t.rowHtml);
+});
+function openModal(title, bodyHtml){
+  $('modalTitle').textContent = title;
+  $('modalBody').innerHTML = bodyHtml;
+  $('modalMask').classList.add('show');
+}
+function closeModal(){ $('modalMask').classList.remove('show'); }
+$('modalClose').addEventListener('click', closeModal);
+$('modalMask').addEventListener('click', e=>{ if (e.target === $('modalMask')) closeModal(); });
+
+/* ============ 数据准备 ============ */
+const D = window.DASH || {date:'', soe:{applied:[],pool:[],windows:[]}, prv:[]};
+
+/* ============ 央国企 ============ */
+const soeAppliedState = { rows: D.soe.applied.map(r=>({...r})), f:{q:'',batch:'all',st:'all'}, sort:{key:'co',asc:true},
+  fields:[
+    {type:'search', ph:'搜索公司 / 岗位 / 地点…'},
+    {type:'select', key:'batch', label:'全部批次', opts:[...new Set(D.soe.applied.map(r=>r.batch))].sort()},
+    {type:'select', key:'st', label:'全部状态', opts:[...new Set(D.soe.applied.map(r=>r.st))].sort()}
+  ]};
+/* 近期开闸 · 行动清单 = 未投递且网申窗口在近期（8-9月/9月/9-10月）的计划投公司 */
+const SOE_ACT = ['8-9月', '9月', '9-10月'];
+const soeActNowState = { rows: D.soe.pool.filter(r=>SOE_ACT.includes(r.win)).map(r=>({...r})), f:{q:''}, sort:{key:'co',asc:true},
+  fields:[
+    {type:'search', ph:'搜索公司 / 地点…'}
+  ]};
+
+function renderSoe(){
+  const applied = D.soe.applied;
+  const total = applied.length;
+  const dead = applied.filter(r=>isDead(r.st)).length;
+  const pro = applied.filter(r=>progressed(r.st)).length;
+  const meet = applied.filter(r=>/笔试|测评/.test(r.st) && !isDead(r.st)).length;
+  const face = applied.filter(r=>/一面|二面|三面|offer/.test(r.st) && !isDead(r.st)).length;
+  const exam = applied.filter(r=>r.st==='笔试待参加').length;
+  const offerN = applied.filter(r=>r.st==='offer').length;
+  const actNow = soeActNowState.rows.length;
+  const tipsDate = D.tips_date || '最新';
+
+  const funnel = [
+    {lbl:'投递', n:total},
+    {lbl:'简历过', n:pro},
+    {lbl:'测评/笔试', n:meet},
+    {lbl:'一面', n:face},
+    {lbl:'Offer', n:offerN},
+  ];
+  const funnelHtml = funnel.map(f=>{
+    const w = f.n>0 ? Math.max(14, f.n/total*100) : 0;
+    return `<div class="frow"><div class="lbl">${f.lbl}</div>` + (f.n>0?`<div class="seg" style="width:${w}%">${f.n}</div>`:`<div class="empty">0</div>`) + `<div class="pct">${pct(f.n,total)}</div></div>`;
+  }).join('');
+
+  const priC = p=>applied.filter(r=>r.pri===p).length;
+  const priMax = Math.max(1, ...['最高','高','一般','低'].map(priC));
+  const batC = b=>applied.filter(r=>r.batch===b).length;
+  const batches = [...new Set(applied.map(r=>r.batch))].filter(b=>b && b!=='-');
+  const batMax = Math.max(1, ...batches.map(batC));
+
+  $('view-soe').innerHTML = `
+    <div class="stats" id="soe-stats">
+      ${statCard('blue', total, '累计投递', 'soe:total')}
+      ${statCard('green', pro, '简历通过', 'soe:pro')}
+      ${statCard('red', dead, '已挂（终态）', 'soe:dead')}
+      ${statCard('orange', total-dead, '进行中', 'soe:active')}
+      ${statCard('orange', exam, '笔试待参加', 'soe:exam')}
+      ${statCard('red', offerN, 'Offer', 'soe:offer')}
+    </div>
+    <div class="grid">
+      <div class="box">
+        <h3>投递概览</h3>
+        <div class="funnel">${funnelHtml}</div>
+        <div class="sub">简历阶段淘汰 ${total-pro} 条（${pct(total-pro,total)}），简历筛选中 ${total-dead-pro} 条</div>
+      </div>
+      <div class="box">
+        <h3>优先级分布</h3>
+        <div class="hbar">
+          ${[['最高','#dc2626'],['高','#ea580c'],['一般','#2563eb'],['低','#94a3b8']].map(([p,c])=>`<div class="row"><div class="name">${p}</div><div class="bar"><i style="width:${Math.max(3,priC(p)/priMax*100)}%;background:${c}"></i></div><div class="val">${priC(p)}</div></div>`).join('')}
+        </div>
+        <h3 style="margin-top:18px">批次分布</h3>
+        <div class="hbar">
+          ${batches.length ? batches.map(b=>`<div class="row"><div class="name">${esc(b)}</div><div class="bar"><i style="width:${Math.max(3,batC(b)/batMax*100)}%;background:#16a34a"></i></div><div class="val">${batC(b)}</div></div>`).join('') : `<div class="empty-state">暂无批次数据</div>`}
+        </div>
+      </div>
+      <div class="box wide">
+        <h3>投递明细（共 ${total} 条）</h3>
+        <div id="soe-applied-table"></div>
+      </div>
+      <div class="box wide">
+        <h3>近期开闸 · 行动清单（${actNow} 家）</h3>
+        <div id="soe-actnow-table"></div>
+      </div>
+      <div class="box wide">
+        <h3>新增岗位情报 · ${tipsDate} 筛选（央国企/央企控股）</h3>
+        ${tipsHtml(D.soe_tips||[])}
+      </div>
+    </div>`;
+
+  renderTable('soe-applied-table', soeAppliedState,
+    [ {key:'co',label:'公司'}, {key:'batch',label:'批次'}, {key:'loc',label:'地点'}, {key:'pri',label:'优先级'}, {key:'job',label:'岗位'}, {key:'st',label:'状态'}, {key:'link',label:'入口'} ],
+    r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.batch||'-')}</td><td>${esc(r.loc||'-')}</td><td>${priHtml(r.pri||'-')}</td><td>${esc(r.job||'-')}</td><td>${tagHtml(r.st)}</td><td>${linkHtml(r.link)}</td></tr>`);
+  renderTable('soe-actnow-table', soeActNowState,
+    [ {key:'co',label:'公司'}, {key:'win',label:'预计网申时间'}, {key:'loc',label:'地点'}, {key:'link',label:'官网'} ],
+    r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.win||'-')}</td><td>${esc(r.loc||'-')}</td><td>${linkHtml(r.link)}</td></tr>`);
+}
+
+/* ============ 私企 ============ */
+const prvState = { rows: D.prv.map(r=>({...r})), f:{q:'',st:'all',dir:'all',batch:'all'}, sort:{key:'co',asc:true},
+  fields:[
+    {type:'search', ph:'搜索公司 / 岗位 / 地点…'},
+    {type:'select', key:'dir', label:'全部方向', opts:[...new Set(D.prv.map(r=>r.dir))].sort()},
+    {type:'select', key:'batch', label:'全部批次', opts:[...new Set(D.prv.map(r=>r.batch))].sort()},
+    {type:'select', key:'st', label:'全部状态', opts:[...new Set(D.prv.map(r=>r.st))].sort()}
+  ]};
+
+function renderPrv(){
+  const all = D.prv;
+  const total = all.length;
+  const dead = all.filter(r=>isDead(r.st)).length;
+  const pro = all.filter(r=>progressed(r.st)).length;
+  const meet = all.filter(r=>/测评|笔试/.test(r.st) && !isDead(r.st)).length;
+  const face = all.filter(r=>/一面|二面|三面|offer/.test(r.st) && !isDead(r.st)).length;
+  const exam = all.filter(r=>r.st==='笔试待参加').length;
+  const offerN = all.filter(r=>r.st==='offer').length;
+  const tipsDate = D.tips_date || '最新';
+
+  const funnel = [
+    {lbl:'投递', n:total},
+    {lbl:'简历过', n:pro},
+    {lbl:'测评/笔试', n:meet},
+    {lbl:'一面', n:face},
+    {lbl:'Offer', n:offerN},
+  ];
+  const funnelHtml = funnel.map(f=>{
+    const w = f.n>0 ? Math.max(14, f.n/total*100) : 0;
+    return `<div class="frow"><div class="lbl">${f.lbl}</div>` + (f.n>0?`<div class="seg" style="width:${w}%">${f.n}</div>`:`<div class="empty">0</div>`) + `<div class="pct">${pct(f.n,total)}</div></div>`;
+  }).join('');
+
+  const priC = p=>all.filter(r=>r.pri===p).length;
+  const priMax = Math.max(1, ...['最高','高','一般','低'].map(priC));
+  const batC = b=>all.filter(r=>r.batch===b).length;
+  const batches = [...new Set(all.map(r=>r.batch))];
+  const batMax = Math.max(1, ...batches.map(batC));
+
+  $('view-prv').innerHTML = `
+    <div class="stats" id="prv-stats">
+      ${statCard('blue', total, '累计投递', 'prv:total')}
+      ${statCard('green', pro, '简历通过', 'prv:pro')}
+      ${statCard('red', dead, '已挂（终态）', 'prv:dead')}
+      ${statCard('orange', total-dead, '进行中', 'prv:active')}
+      ${statCard('orange', exam, '笔试待参加', 'prv:exam')}
+      ${statCard('red', offerN, 'Offer', 'prv:offer')}
+    </div>
+    <div class="grid">
+      <div class="box">
+        <h3>投递概览</h3>
+        <div class="funnel">${funnelHtml}</div>
+        <div class="sub">简历阶段淘汰 ${total-pro} 条（${pct(total-pro,total)}），简历筛选中 ${total-dead-pro} 条</div>
+      </div>
+      <div class="box">
+        <h3>优先级分布</h3>
+        <div class="hbar">
+          ${[['最高','#dc2626'],['高','#ea580c'],['一般','#2563eb'],['低','#94a3b8']].map(([p,c])=>`<div class="row"><div class="name">${p}</div><div class="bar"><i style="width:${Math.max(3,priC(p)/priMax*100)}%;background:${c}"></i></div><div class="val">${priC(p)}</div></div>`).join('')}
+        </div>
+        <h3 style="margin-top:18px">批次分布</h3>
+        <div class="hbar">
+          ${batches.map(b=>`<div class="row"><div class="name">${esc(b)}</div><div class="bar"><i style="width:${Math.max(3,batC(b)/batMax*100)}%;background:#16a34a"></i></div><div class="val">${batC(b)}</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="box wide">
+        <h3>投递明细（共 ${total} 条）</h3>
+        <div id="prv-table"></div>
+      </div>
+      <div class="box wide">
+        <h3>新增岗位情报 · ${tipsDate} 筛选（私企）</h3>
+        ${tipsHtml(D.prv_tips||[])}
+      </div>
+    </div>`;
+
+  renderTable('prv-table', prvState,
+    [ {key:'co',label:'公司'}, {key:'dir',label:'方向'}, {key:'batch',label:'批次'}, {key:'loc',label:'地点'}, {key:'pri',label:'优先级'}, {key:'job',label:'岗位'}, {key:'st',label:'状态'}, {key:'link',label:'入口'} ],
+    r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.dir)}</td><td>${esc(r.batch)}</td><td>${esc(r.loc)}</td><td>${priHtml(r.pri)}</td><td>${esc(r.job)}</td><td>${tagHtml(r.st)}</td><td>${linkHtml(r.link)}</td></tr>`);
+}
+
+/* ============ 统计卡 → 明细弹窗 ============ */
+function detailRowsFor(q){
+  const [scope, kind] = q.split(':');
+  const rows = scope==='soe' ? D.soe.applied : D.prv;
+  if (scope==='soe') {
+    if (kind==='total') return {title:'央国企 · 全部投递', rows, cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态'],['link','入口']]};
+    if (kind==='pro') return {title:'央国企 · 简历通过', rows: rows.filter(r=>progressed(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态'],['link','入口']]};
+    if (kind==='dead') return {title:'央国企 · 已挂', rows: rows.filter(r=>isDead(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态']]};
+    if (kind==='active') return {title:'央国企 · 进行中', rows: rows.filter(r=>!isDead(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态']]};
+    if (kind==='exam') return {title:'央国企 · 笔试待参加', rows: rows.filter(r=>r.st==='笔试待参加'), cols:[['co','公司'],['loc','地点'],['job','岗位'],['link','入口']]};
+    if (kind==='offer') return {title:'央国企 · Offer', rows: rows.filter(r=>r.st==='offer'), cols:[['co','公司'],['loc','地点'],['job','岗位']]};
+  }
+  if (kind==='total') return {title:'私企 · 全部投递', rows, cols:[['co','公司'],['dir','方向'],['batch','批次'],['loc','地点'],['st','状态'],['link','入口']]};
+  if (kind==='dead') return {title:'私企 · 已挂', rows: rows.filter(r=>isDead(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态']]};
+  if (kind==='pro') return {title:'私企 · 简历通过', rows: rows.filter(r=>progressed(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态'],['link','入口']]};
+  if (kind==='active') return {title:'私企 · 进行中', rows: rows.filter(r=>!isDead(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态']]};
+  if (kind==='exam') return {title:'私企 · 笔试待参加', rows: rows.filter(r=>r.st==='笔试待参加'), cols:[['co','公司'],['dir','方向'],['job','岗位'],['link','入口']]};
+  if (kind==='offer') return {title:'私企 · Offer', rows: rows.filter(r=>r.st==='offer'), cols:[['co','公司'],['dir','方向'],['job','岗位']]};
+  return null;
+}
+document.addEventListener('click', e=>{
+  const card = e.target.closest('.stat[data-q]');
+  if (!card) return;
+  const d = detailRowsFor(card.dataset.q);
+  if (!d) return;
+  const ths = d.cols.map(c=>`<th>${c[1]}</th>`).join('');
+  const body = d.rows.length ? d.rows.map(r=>{
+    const tds = d.cols.map(c=>{
+      const k = c[0], v = r[k];
+      if (k==='st') return `<td>${tagHtml(v)}</td>`;
+      if (k==='link') return `<td>${linkHtml(v)}</td>`;
+      if (k==='pri') return `<td>${priHtml(v)}</td>`;
+      return `<td>${esc(v ?? '-')}</td>`;
+    }).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="empty-state">暂无数据</div></td></tr>';
+  openModal(d.title, `<div class="tbl-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${body}</tbody></table></div>`);
+});
+
+/* ============ 初始化 ============ */
+function initTheme(){
+  const saved = localStorage.getItem('kb-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  $('themeBtn').textContent = saved==='dark' ? '☀️ 亮色' : '🌙 深色';
+}
+$('themeBtn').addEventListener('click', ()=>{
+  const cur = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', cur);
+  $('themeBtn').textContent = cur==='dark' ? '☀️ 亮色' : '🌙 深色';
+  localStorage.setItem('kb-theme', cur);
+});
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    t.classList.add('active');
+    $(t.dataset.view).classList.add('active');
+  });
+});
+
+$('heroMeta').textContent = '数据截至 ' + D.date + ' · 由选岗老师维护 · 数据源：投递总表（Excel）。支持搜索、筛选、排序与深色模式，点击统计卡可查看明细。';
+initTheme();
+renderSoe();
+renderPrv();
+</script>
+</body>
+</html>

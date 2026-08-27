@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>秋招AI求职团队 · 开源免费的多角色 Agent 求职系统</title>
+<style>
+:root{
+  --bg:#f5f6fb; --card:rgba(255,255,255,.72); --card2:rgba(255,255,255,.5);
+  --border:rgba(15,23,42,.09); --text:#0f172a; --muted:#64748b;
+  --brand:#6366f1; --brand2:#8b5cf6; --accent:#ec4899; --ok:#16a34a;
+  --shadow:0 8px 30px rgba(2,6,23,.08);
+}
+[data-theme=dark]{
+  --bg:#0b1120; --card:rgba(17,24,39,.66); --card2:rgba(17,24,39,.42);
+  --border:rgba(255,255,255,.09); --text:#e2e8f0; --muted:#94a3b8;
+  --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.7;transition:background .3s,color .3s;overflow-x:hidden}
+.bg-glow{position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(600px 420px at 12% -6%,rgba(99,102,241,.16),transparent 65%),
+  radial-gradient(560px 400px at 92% 6%,rgba(139,92,246,.14),transparent 65%),
+  radial-gradient(520px 420px at 50% 108%,rgba(236,72,153,.10),transparent 65%)}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+
+/* 顶栏 */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--border)}
+.nav{display:flex;align-items:center;gap:18px;height:56px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--accent));box-shadow:0 0 10px var(--brand)}
+.nav-links{display:flex;gap:4px;flex-wrap:wrap}
+.nav-links a{color:var(--muted);font-size:13.5px;padding:5px 11px;border-radius:999px;transition:.2s}
+.nav-links a:hover{color:var(--text);background:var(--card);text-decoration:none}
+.nav .sp{flex:1}
+.theme-btn{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);width:34px;height:34px;border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s}
+.theme-btn:hover{transform:rotate(20deg)}
+
+/* Hero */
+.hero{padding:64px 0 30px;text-align:center}
+.hero .tag{display:inline-block;font-size:12.5px;padding:5px 14px;border-radius:999px;background:linear-gradient(135deg,rgba(99,102,241,.14),rgba(236,72,153,.14));border:1px solid var(--border);color:var(--brand);margin-bottom:18px;letter-spacing:.5px}
+.hero-box{position:relative;max-width:840px;margin:0 auto 24px;padding:38px 28px 28px;border-radius:24px;
+  background:linear-gradient(color-mix(in srgb,var(--bg) 84%,transparent),color-mix(in srgb,var(--bg) 84%,transparent)) padding-box,
+             linear-gradient(135deg,rgba(99,102,241,.65),rgba(139,92,246,.5) 55%,rgba(236,72,153,.5)) border-box;
+  border:1.5px solid transparent;box-shadow:0 12px 44px rgba(99,102,241,.16)}
+.hero-box h1{font-size:clamp(26px,4.4vw,42px);line-height:1.25;background:linear-gradient(120deg,#4f46e5,#8b5cf6 55%,#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:14px;font-weight:800}
+.hero-box .sub{font-size:clamp(14px,2vw,17px);color:var(--muted);max-width:760px;margin:0 auto}
+.pills{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:30px}
+.pill{display:flex;align-items:center;gap:7px;font-size:13px;padding:7px 15px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow)}
+.pill b{font-weight:700}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:11px 26px;border-radius:999px;font-weight:600;font-size:14.5px;transition:.25s;border:none;cursor:pointer}
+.btn.p{color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 6px 20px rgba(99,102,241,.35)}
+.btn.p:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(99,102,241,.45);text-decoration:none}
+.btn.ghost{background:var(--card);border:1px solid var(--border);color:var(--text);box-shadow:var(--shadow)}
+.btn.ghost:hover{text-decoration:none;border-color:var(--brand)}
+.hint{margin-top:18px;font-size:12.5px;color:var(--muted)}
+
+/* 区块 */
+section{padding:34px 0}
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.sec-head .ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:15px;flex:none}
+.sec-head h2{font-size:21px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:var(--shadow);backdrop-filter:blur(10px)}
+.card + .card{margin-top:14px}
+.lead{font-size:14px;color:var(--muted)}
+
+/* 使用效果 */
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.gal .item{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--card2)}
+.gal .item img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover;border-bottom:1px solid var(--border)}
+.gal .cap{padding:9px 13px;font-size:13px;font-weight:600;color:var(--text)}
+
+/* 步骤 */
+.steps{counter-reset:s}
+.step{position:relative;padding:14px 18px 14px 56px;background:var(--card);border:1px solid var(--border);border-radius:13px;margin-bottom:11px;box-shadow:var(--shadow)}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:15px;width:27px;height:27px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.step b{display:block;font-size:15px;margin-bottom:3px}
+.step p{font-size:13.5px;color:var(--muted)}
+.code{background:rgba(2,6,23,.9);color:#e2e8f0;border-radius:10px;padding:12px 16px;font-family:ui-monospace,Consolas,monospace;font-size:13px;margin-top:10px;overflow-x:auto}
+[data-theme=dark] .code{background:#0f172a;border:1px solid var(--border)}
+blockquote{margin:14px 0 0;padding:12px 16px;border-left:3px solid var(--brand);background:var(--card2);border-radius:0 10px 10px 0;font-size:13.5px;color:var(--text)}
+
+/* 表格 */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.tbl th{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.1));padding:11px 14px;text-align:left;font-weight:700}
+.tbl td{padding:10px 14px;border-top:1px solid var(--border);vertical-align:top}
+.tbl tr:first-child td{border-top:none}
+
+/* 目录结构 */
+.tree{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:rgba(2,6,23,.9);color:#e2e8f0;border-radius:12px;padding:18px 20px;overflow-x:auto;line-height:1.9}
+[data-theme=dark] .tree{background:#0f172a;border:1px solid var(--border)}
+.tree .c{color:#7dd3fc}.tree .star{color:#fbbf24}
+
+/* FAQ */
+.qa{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;box-shadow:var(--shadow)}
+.q{font-weight:700;font-size:14.5px;margin-bottom:6px}
+.a{font-size:13.5px;color:#16a34a}
+[data-theme=dark] .a{color:#4ade80}
+/* 快速开始步骤标题 */
+.fcard-h{font-size:15.5px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.fcard-h::before{content:"▶";color:var(--brand);font-size:11px;flex:none}
+
+footer{padding:34px 0 46px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:20px}
+
+@media(max-width:820px){.gal{grid-template-columns:1fr}.nav-links{display:none}}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<header class="topbar">
+  <div class="wrap nav">
+    <div class="brand"><span class="dot"></span>秋招AI求职团队</div>
+    <div class="nav-links">
+      <a href="#effect">使用效果</a><a href="#quick">极速版</a><a href="#start">快速开始</a>
+      <a href="#model">模型推荐</a><a href="#tree">目录结构</a><a href="#faq">常见问题</a>
+    </div>
+    <div class="sp"></div>
+    <button class="theme-btn" id="themeBtn" title="切换深色/浅色">🌙</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Hero -->
+  <section class="hero">
+    <span class="tag">🎓 开源免费 · 多角色 Agent 求职系统</span>
+    <div class="hero-box">
+      <h1>别人花几千块报的「求职陪跑班」<br>我做成了一套 Agent，并且开源免费</h1>
+      <p class="sub">一套专为 <b>秋招 / 春招应届毕业生</b> 设计的 <b>多角色 AI 求职团队</b>。你在 AI 客户端里开 5 个对话，就能拥有一整个求职陪跑团队——不需要你手动整理表格，不需要你记各种截止时间，整个求职战役交给团队管理。</p>
+    </div>
+    <div class="pills">
+      <span class="pill">🏛️ <b>总架构师</b> · 系统搭建/规则/派单</span>
+      <span class="pill">👔 <b>班主任</b> · 规划督促</span>
+      <span class="pill">🔍 <b>选岗老师</b> · 情报/台账/看板</span>
+      <span class="pill">📚 <b>学习指导老师</b> · 笔面试辅导</span>
+      <span class="pill">📄 <b>简历优化老师</b> · 简历优化</span>
+    </div>
+    <div class="cta-row">
+      <a class="btn p" href="#quick">⚡ 极速版 · 10 分钟搞定</a>
+      <a class="btn ghost" href="#start">🚀 完整版 · 一步一步来</a>
+    </div>
+    <div class="hint">💡 先免费跑通：Trae 每月自带免费额度，先用它跑通整个系统；额度用完了再配置自己的大模型 API（怎么配、配哪个，直接问你的总架构师）。</div>
+  </section>
+
+  <!-- 使用效果 -->
+  <section id="effect">
+    <div class="sec-head"><div class="ico">📸</div><h2>使用效果</h2></div>
+    <div class="lead" style="margin-bottom:14px">实际运行效果一览（截图来自真实使用）。</div>
+    <div class="gal">
+      <div class="item"><img src="docs/screenshots/岗位投递可视化界面.png" alt="岗位投递可视化界面"><div class="cap">岗位投递可视化看板</div></div>
+      <div class="item"><img src="docs/screenshots/每日每周待办可视化界面.png" alt="每日每周待办可视化界面"><div class="cap">每日 + 每周待办看板</div></div>
+      <div class="item"><img src="docs/screenshots/与班主任沟通.png" alt="与班主任沟通"><div class="cap">与班主任沟通待办</div></div>
+    </div>
+  </section>
+
+  <!-- 极速版 -->
+  <section id="quick">
+    <div class="sec-head"><div class="ico">⚡</div><h2>极速版（纯小白 / 懒人通道，10 分钟搞定）</h2></div>
+    <p class="lead" style="margin-bottom:14px">如果你连"拉取项目"都嫌麻烦，或者完全不懂技术，走这条通道：</p>
+    <div class="steps">
+      <div class="step"><b>下载并安装 <a href="https://www.trae.com.cn/" target="_blank" rel="noopener">Trae</a></b><p><a href="https://www.trae.com.cn/" target="_blank" rel="noopener">官网</a>免费下载。</p></div>
+      <div class="step"><b>创建一个文件夹</b><p>在你电脑上合适的位置创建（比如 <code>秋招AI</code>），记下位置，之后不建议移动。</p></div>
+      <div class="step"><b>打开 Trae 并打开该文件夹</b><p>用"打开文件夹"打开刚创建的文件夹。</p></div>
+      <div class="step"><b>把项目链接丢给对话</b><p>新建对话，把本项目的 GitHub 链接粘贴发给它，并发送：</p>
+        <div class="code">请把这个项目拉取下来，并完成全部配置；然后阅读项目里的《各老师对话初始提示词.md》，按其中的总架构师提示词行事，担任本系统的总架构师并指导用户创建其他老师</div>
+      </div>
+      <div class="step"><b>把对话重命名为「总架构师」</b><p>对话框标题栏即可改名（它会提醒你；没提醒就自己改）。</p></div>
+      <div class="step"><b>剩下的交给它</b><p>安装组件、放置简历、创建其他老师——总架构师都会一步步带你完成。</p></div>
+    </div>
+    <blockquote>一句话总结：<b>把链接丢给对话，剩下交给它。</b></blockquote>
+  </section>
+
+  <!-- 快速开始 -->
+  <section id="start">
+    <div class="sec-head"><div class="ico">🚀</div><h2>快速开始（一步一步 · 完整版）</h2></div>
+    <p class="lead" style="margin-bottom:14px">以下步骤照着做即可。遇到任何问题，<b>直接问总架构师对话</b>，它会指导你完成。</p>
+
+    <div class="card">
+      <div class="fcard"><h3 class="fcard-h">第 0 步 · 准备材料</h3>
+        <table class="tbl" style="margin-top:12px">
+          <tr><th>材料</th><th>说明</th></tr>
+          <tr><td>AI 客户端</td><td>推荐 <b>Trae</b>（免费、适合小白）。Cursor 等其他支持 MCP 的客户端也可以。</td></tr>
+          <tr><td>大模型</td><td>先用 Trae 自带免费额度；不够再配 DeepSeek/Qwen 等（见模型推荐，具体配置问总架构师）。</td></tr>
+          <tr><td>个人材料</td><td>简历（PDF/Word）、成绩单（可选）、求职目标。</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card"><div class="fcard"><h3 class="fcard-h">第 1 步 · 拉取本项目</h3>
+      <div class="code">git clone https://github.com/C571467648/offerhuntcrew.git</div>
+      <p style="margin-top:10px">然后把文件夹放到你电脑上的任意位置（建议放在固定目录，后续不要再移动）。</p>
+    </div></div>
+
+    <div class="card"><div class="fcard"><h3 class="fcard-h">第 2 步 · 放置个人材料</h3>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>材料</th><th>放置位置</th></tr>
+        <tr><td>简历</td><td><code>00_交互区/用户提供/</code></td></tr>
+        <tr><td>成绩单（可选）</td><td><code>00_交互区/用户提供/</code></td></tr>
+        <tr><td>校招信息汇总表（如有）</td><td><code>00_交互区/用户提供/情报源/</code></td></tr>
+      </table>
+      <p style="margin-top:10px">详见 <code>00_交互区/用户提供/README.md</code> 的放置指引。</p>
+    </div></div>
+
+    <div class="card"><div class="fcard"><h3 class="fcard-h">第 3 步 · 复制总架构师提示词（第一步永远是它！）</h3>
+      <p>打开 <code>各老师对话初始提示词.md</code> → 复制 <b>总架构师</b> 那一份 → 在 AI 客户端新建对话粘贴发送 → <b>告诉它"我是新用户，请带我完成系统初始化"</b>。</p>
+      <blockquote>⚠️ 总架构师会引导你完成后面所有配置：安装必需组件、检查环境、初始化系统。<b>之后所有配置问题都问它</b>，不要自己乱装。</blockquote>
+    </div></div>
+
+    <div class="card"><div class="fcard"><h3 class="fcard-h">第 4 步 · 按顺序创建其余四位老师</h3>
+      <p>等总架构师宣布"系统就绪"后，依次新建 4 个对话，分别粘贴 <b>班主任 / 选岗老师 / 学习指导老师 / 简历优化老师</b> 的提示词。每个对话会自动命名成对应角色名（如"班主任"）；各老师会先阅读自己的 README 并复述职责边界，然后开工。</p>
+    </div></div>
+
+    <div class="card"><div class="fcard"><h3 class="fcard-h">第 5 步 · 开始求职战役</h3>
+      <p>班主任先了解你的情况（学校/专业/意向城市/目标等）建立用户档案；选岗老师开始搜集岗位情报、建立投递台账；学习指导老师按目标单位出训练计划；简历优化老师根据新方向帮你优化简历。</p>
+    </div></div>
+  </section>
+
+  <!-- 模型推荐 -->
+  <section id="model">
+    <div class="sec-head"><div class="ico">🧠</div><h2>模型推荐（先免费，后自备 API）</h2></div>
+    <table class="tbl">
+      <tr><th>模型</th><th>说明</th></tr>
+      <tr><td><b>Trae 免费额度</b></td><td>Trae 客户端<b>每月自带免费额度</b>。建议<b>先用它把整个系统跑通</b>，一分钱不花。</td></tr>
+      <tr><td>DeepSeek V4 Flash</td><td>Trae 额度用完后可配它。⚠️ 涨价后较贵，建议在<b>非高峰期</b>使用。</td></tr>
+      <tr><td>Qwen 3.7 Flash / 3.8 Flash</td><td>DeepSeek 涨价时的备选，同样便宜好用。</td></tr>
+      <tr><td>其他模型</td><td>你也可以用任何你喜欢的模型，具体选哪个由你自己决定。</td></tr>
+    </table>
+    <blockquote>先用免费的；额度用完了再配置自己的大模型 API。<b>怎么配、配哪个、要不要配——直接问你的总架构师</b>，它一步步带你完成。本系统不绑定任何特定模型。</blockquote>
+  </section>
+
+  <!-- 目录结构 -->
+  <section id="tree">
+    <div class="sec-head"><div class="ico">📁</div><h2>目录结构</h2></div>
+    <div class="tree">
+秋招AI求职团队/<br>
+├── README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 本文件（项目介绍）</span><br>
+├── index.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 本展示页面</span><br>
+├── 系统运行手册.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 系统运行总规范（各老师必读）</span><br>
+├── 各老师对话初始提示词.md &nbsp;&nbsp;<span class="star">← ★ 5 位老师的初始提示词（按顺序复制）</span><br>
+├── 00_交互区/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 面向你的交互区（放材料 / 收报告）</span><br>
+├── 01_共享区/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 五位老师的"工作群"（通知板/任务/简历库…）</span><br>
+├── 02_系统配置/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 模板、skill、MCP 说明（不用手动动）</span><br>
+├── 03_总架构师/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 总架构师的 README 与项目要求</span><br>
+├── 04_班主任/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 待办规划</span><br>
+├── 05_选岗老师/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 投递台账 + 可视化看板</span><br>
+├── 06_学习指导老师/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 笔面试辅导</span><br>
+├── 07_简历优化老师/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← 简历优化</span><br>
+└── docs/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">← README 配图（docs/screenshots/）</span>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="sec-head"><div class="ico">❓</div><h2>常见问题</h2></div>
+
+    <div class="qa"><p class="q">Q：遇到 Bug 了（看板打不开/显示异常、脚本报错、MCP 失效），怎么办？</p>
+      <p class="a">A：<b>直接找你的总架构师对话</b>。把问题原样告诉它（报错信息、界面截图、哪个功能不对），它会帮你定位并修复——规则上只有总架构师能修改系统规则、脚本与界面，其余老师遇到系统问题也会升级给它。也可以在仓库提 Issue 反馈。</p>
+    </div>
+
+    <div class="qa"><p class="q">Q：我不会安装 MCP / 组件，怎么办？</p>
+      <p class="a">A：全部交给总架构师对话。告诉它"我是新用户，请带我完成系统初始化"，它会一步步指导你，包括安装文档处理组件（LibreOffice）、注册 MCP 等。</p>
+    </div>
+
+    <div class="qa"><p class="q">Q：我完全不懂系统、不懂配置，也能用吗？</p>
+      <p class="a">A：完全能。你不需要懂任何流程和配置——所有安装、注册、放置材料、创建老师，一律问你的总架构师对话，它会一步一步带你完成。<b>你只负责提供材料和做决定，其余全交给架构师。</b></p>
+    </div>
+
+    <div class="qa"><p class="q">Q：系统支持 Cursor 吗？</p>
+      <p class="a">A：支持。本系统按 Trae 设计（免费、适合小白），但核心机制（多对话 + MCP + 文件夹协作）在任何主流 AI 客户端都通用。</p>
+    </div>
+
+    <div class="qa"><p class="q">Q：我投央国企，也投私企，系统能兼顾吗？</p>
+      <p class="a">A：可以。选岗老师维护央国企、私企两套台账，看板分组展示。</p>
+    </div>
+
+    <div class="qa"><p class="q">Q：我是计算机专业，懂 AI / Agent，想改架构怎么办？</p>
+      <p class="a">A：直接通过总架构师对话调整。总架构师是唯一能修改系统规则的角色，会配合你改造。</p>
+    </div>
+
+    <div class="qa"><p class="q">Q：我的简历已经定稿了，还需要简历优化老师吗？</p>
+      <p class="a">A：需要。它负责"方向分析"和"新方向出稿"——比如你新增一个求职方向时，它能帮你写对应版本的简历。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  开源免费使用 · 欢迎 Star / Fork / 提 Issue 改进<br>
+  GitHub：<a href="https://github.com/C571467648/offerhuntcrew" target="_blank" rel="noopener">github.com/C571467648/offerhuntcrew</a><br>
+  Made with ❤️ for 每一个秋招人。求职不易，愿这套系统帮你打赢这场仗。
+</footer>
+
+<script>
+(function(){
+  var KEY='site_theme';
+  var t = localStorage.getItem(KEY) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', t);
+  var btn = document.getElementById('themeBtn');
+  btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  btn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', cur);
+    localStorage.setItem(KEY, cur);
+    btn.textContent = cur === 'dark' ? '☀️' : '🌙';
+  });
+})();
+</script>
+</body>
+</html>

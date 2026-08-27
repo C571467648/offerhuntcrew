@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日与本周待办</title>
+<style>
+:root{--bg:#f4f7fb;--card:#ffffff;--txt:#1e293b;--mut:#64748b;--bd:rgba(148,163,184,.22);--acc:#2563eb;--acc2:#0ea5e9;--pri-h:#dc2626;--pri-m:#d97706;--pri-l:#64748b;}
+[data-theme="dark"]{--bg:#0b1220;--card:#111a2e;--txt:#e2e8f0;--mut:#94a3b8;--bd:rgba(148,163,184,.18);--acc:#3b82f6;--acc2:#22d3ee;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;transition:background .3s,color .3s;}
+.bg{position:fixed;inset:0;z-index:-1;background:
+ radial-gradient(600px 400px at 12% -5%, rgba(37,99,235,.14), transparent 60%),
+ radial-gradient(500px 350px at 95% 8%, rgba(14,165,233,.12), transparent 60%),
+ var(--bg);}
+.wrap{max-width:860px;margin:0 auto;padding:20px 18px 48px;}
+/* 顶栏 */
+.topbar{max-width:860px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--txt);}
+.dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 0 10px var(--acc);}
+.theme-toggle{cursor:pointer;font-size:15px;border:1px solid var(--bd);border-radius:999px;padding:5px 11px;background:var(--card);user-select:none;}
+/* Hero */
+.hero{background:linear-gradient(135deg,rgba(37,99,235,.10),rgba(14,165,233,.06)),var(--card);border:1px solid var(--bd);border-radius:18px;padding:26px 24px;box-shadow:0 6px 24px rgba(15,23,42,.06);}
+.hero .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(14,165,233,.14));color:var(--acc);border:1px solid rgba(37,99,235,.25);white-space:nowrap;}
+.hero h1{font-size:26px;font-weight:800;background:linear-gradient(120deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.5px;}
+.sub{color:var(--mut);font-size:13px;margin-top:8px;line-height:1.6;}
+/* 统计条 */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px 18px;}
+.stat-label{font-size:12px;color:var(--mut);}
+.stat-num{font-size:22px;font-weight:800;margin:6px 0 10px;}
+.stat-num .g{color:var(--acc);}
+.bar{height:8px;border-radius:999px;background:rgba(148,163,184,.18);overflow:hidden;}
+.bar-in{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;transition:width .4s;}
+/* 分区卡片 */
+.sec{background:var(--card);border:1px solid var(--bd);border-radius:18px;margin-top:14px;overflow:hidden;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--bd);}
+.sec-head h2{font-size:16px;font-weight:700;}
+.todo-list{max-height:420px;overflow-y:auto;}
+.todo-item{display:flex;align-items:flex-start;gap:12px;padding:13px 20px;border-bottom:1px solid var(--bd);transition:background .2s;}
+.todo-item:last-child{border-bottom:none;}
+.todo-item:hover{background:rgba(37,99,235,.04);}
+.todo-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:19px;height:19px;min-width:19px;border:2px solid var(--mut);border-radius:6px;cursor:pointer;margin-top:1px;position:relative;transition:all .2s;}
+.todo-item input[type=checkbox]:checked{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent;}
+.todo-item input[type=checkbox]:checked::after{content:"✓";position:absolute;inset:0;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.todo-main{flex:1;min-width:0;}
+.todo-text{font-size:14px;line-height:1.6;transition:all .2s;word-break:break-word;}
+.todo-meta{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.tag{font-size:11px;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+.tag.h{background:rgba(220,38,38,.12);color:#dc2626;border:1px solid rgba(220,38,38,.3);}
+.tag.m{background:rgba(217,119,6,.12);color:#d97706;border:1px solid rgba(217,119,6,.3);}
+.tag.l{background:rgba(100,116,139,.12);color:var(--mut);border:1px solid rgba(100,116,139,.3);}
+.tag.due{background:rgba(37,99,235,.10);color:var(--acc);border:1px solid rgba(37,99,235,.25);}
+.todo-item.done .todo-text{color:var(--mut);text-decoration:line-through;}
+.todo-item.done .tag{opacity:.5;}
+.todo-item.done{background:rgba(100,116,139,.05);}
+/* 空态/页脚 */
+.empty{padding:26px;text-align:center;color:var(--mut);font-size:13px;}
+.foot{text-align:center;color:var(--mut);font-size:12px;margin-top:26px;}
+@media(max-width:640px){.stats{grid-template-columns:1fr;} .hero h1{font-size:22px;}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<header class="topbar">
+  <div class="brand"><span class="dot"></span>{{USER_NAME}} · 今日与本周待办</div>
+  <div class="theme-toggle" id="themeToggle">🌙</div>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <div class="pills">
+      <span class="pill">班主任待办</span>
+      <span class="pill" id="datePill"></span>
+    </div>
+    <h1>今日与本周待办</h1>
+    <p class="sub">每天该做什么、该关注什么，清清楚楚。完成一项勾一项，状态自动保存在浏览器本地（清理浏览器缓存会清空勾选记录）。</p>
+  </section>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="stat-label">今日完成</div>
+      <div class="stat-num"><span class="g" id="todayDone">0</span> / <span id="todayTotal">0</span></div>
+      <div class="bar"><div class="bar-in" id="todayBar"></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">本周完成</div>
+      <div class="stat-num"><span class="g" id="weekDone">0</span> / <span id="weekTotal">0</span></div>
+      <div class="bar"><div class="bar-in" id="weekBar"></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>今日待办</h2><span class="pill" id="todayDate"></span></div>
+    <div class="todo-list" id="todayList"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>本周待办</h2><span class="pill" id="weekDate"></span></div>
+    <div class="todo-list" id="weekList"></div>
+  </section>
+
+  <footer class="foot">秋招求职AI团队 · 依据：投递总表 + 与用户沟通</footer>
+</main>
+<script>
+const DATA = /*__DATA__*/ null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const priCls = p => p.includes('高') ? 'h' : p.includes('中') ? 'm' : 'l';
+
+// 勾选状态（浏览器本地缓存 localStorage；清理浏览器缓存/站点数据会丢失）
+let state = {};
+const keyOf = (section, i) => `todo_${DATA.date}#${section}#${i}`;
+function loadState(){
+  try{ state = JSON.parse(localStorage.getItem('todo_state') || '{}'); }catch(e){ state = {}; }
+  render();
+}
+function setDone(section, i, done){
+  const key = keyOf(section, i);
+  try{
+    if(done) state[key] = true; else delete state[key];
+    localStorage.setItem('todo_state', JSON.stringify(state));
+  }catch(e){}
+  render();
+}
+function render(){
+  [['today', DATA.today], ['week', DATA.week]].forEach(([section, list], si) => {
+    const listEl = $(section + 'List'), doneEl = $(section + 'Done'), totalEl = $(section + 'Total'), barEl = $(section + 'Bar');
+    if(!list || !list.items.length){ listEl.innerHTML = '<div class="empty">暂无待办事项</div>'; totalEl.textContent = '0'; barEl.style.width='0'; return; }
+    let done = 0;
+    listEl.innerHTML = list.items.map((it, i) => {
+      const key = keyOf(section, i);
+      const isDone = !!state[key];
+      if(isDone) done++;
+      const pri = it.pri ? `<span class="tag ${priCls(it.pri)}">${esc(it.pri)}</span>` : '';
+      const due = it.due ? `<span class="tag due">⏰ ${esc(it.due)}</span>` : '';
+      return `<div class="todo-item${isDone?' done':''}">
+        <input type="checkbox" ${isDone?'checked':''} onchange="setDone('${section}',${i},this.checked)">
+        <div class="todo-main">
+          <div class="todo-text">${esc(it.text)}</div>
+          <div class="todo-meta">${pri}${due}</div>
+        </div>
+      </div>`;
+    }).join('');
+    doneEl.textContent = done; totalEl.textContent = list.items.length;
+    barEl.style.width = list.items.length ? (done/list.items.length*100).toFixed(1)+'%' : '0';
+  });
+}
+
+// 深色模式
+(function(){
+  const saved = localStorage.getItem('todo_theme');
+  if(saved) document.documentElement.setAttribute('data-theme', saved);
+  $('themeToggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', cur);
+    localStorage.setItem('todo_theme', cur);
+  });
+})();
+
+// 初始化
+$('datePill').textContent = '📅 ' + (DATA.date || '');
+$('todayDate').textContent = DATA.today.range || '';
+$('weekDate').textContent = DATA.week.range || '';
+document.title = (DATA.date||'') + ' 今日与本周待办';
+loadState();
+</script>
+</body>
+</html>

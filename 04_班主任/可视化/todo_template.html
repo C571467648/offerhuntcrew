@@ -109,11 +109,32 @@ const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;'
 const priCls = p => p.includes('高') ? 'h' : p.includes('中') ? 'm' : 'l';
 
 // 勾选状态（浏览器本地缓存 localStorage；清理浏览器缓存/站点数据会丢失）
+// 今日待办按「天」隔离 key，本周待办按「周」隔离 key：
+//   → 每天更新今日待办后，昨日勾选自动清空；同一周内勾选保留，跨周自动清空。
 let state = {};
-const keyOf = (section, i) => `todo_${DATA.date}#${section}#${i}`;
+const keyOf = (section, i) => {
+  const base = section === 'today' ? DATA.date : (DATA.weekKey || DATA.date);
+  return `todo_${base}#${section}#${i}`;
+};
 function loadState(){
   try{ state = JSON.parse(localStorage.getItem('todo_state') || '{}'); }catch(e){ state = {}; }
+  cleanupState();
   render();
+}
+// 清理过期勾选（不依赖任何上次记录，最稳）：
+//   今日勾选的 key 必须等于「当前日期」、本周勾选的 key 必须等于「当前周」，
+//   其余一律清掉 → 每天更新后昨日今日勾选自动消失、跨周后本周勾选自动消失。
+function cleanupState(){
+  try{
+    let changed = false;
+    Object.keys(state).forEach(k => {
+      const m = k.match(/^todo_([^#]+)#(today|week)#\d+$/);
+      if(!m) return;
+      const cur = m[2] === 'today' ? DATA.date : (DATA.weekKey || DATA.date);
+      if(m[1] !== cur){ delete state[k]; changed = true; }
+    });
+    if(changed) localStorage.setItem('todo_state', JSON.stringify(state));
+  }catch(e){}
 }
 function setDone(section, i, done){
   const key = keyOf(section, i);

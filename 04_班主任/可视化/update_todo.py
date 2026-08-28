@@ -4,6 +4,7 @@
   python update_todo.py    # 读最新待办MD，生成 待办看板.html（班主任每次更新待办后执行）
 勾选状态保存在浏览器本地（localStorage），无需本地服务、无需额外存储文件。
 """
+import datetime
 import json
 import os
 import re
@@ -13,7 +14,7 @@ TEACHER_DIR = os.path.dirname(ROOT)                                             
 INPUT_DIR = os.path.join(TEACHER_DIR, '待办历史')                                        # 待办MD所在（历史归档+当天文件）
 OUTPUT_HTML = os.path.join(ROOT, '待办看板.html')
 TEMPLATE = os.path.join(ROOT, 'todo_template.html')
-# 看板品牌名（由总架构师按使用者姓名替换）
+# 看板品牌名（开源版请由总架构师替换为使用者姓名）
 USER_NAME = '{{用户姓名}}'
 
 
@@ -30,7 +31,9 @@ def find_latest_todo():
 def parse_md(path):
     with open(path, encoding='utf-8') as f:
         text = f.read()
-    date = os.path.basename(path)[:10]
+    # 日期优先取 MD 标题「今日待办（YYYY-MM-DD ...）」，兜底取文件名（保证每天更新后今日勾选自动隔离）
+    m_date = re.search(r'^##\s*今日待办\s*[（(]\s*(\d{4}-\d{2}-\d{2})', text, re.M)
+    date = m_date.group(1) if m_date else os.path.basename(path)[:10]
     sections = {'今日待办': {'range': '', 'items': []}, '本周待办': {'range': '', 'items': []}}
     cur = None
     for line in text.splitlines():
@@ -46,6 +49,16 @@ def parse_md(path):
     return date, sections
 
 
+def iso_week(date_str):
+    """由日期算 ISO 周年（如 2026-W35），用于本周待办勾选的周级隔离：同周保留、跨周清空"""
+    try:
+        y, m, d = map(int, date_str.split('-'))
+        iso = datetime.date(y, m, d).isocalendar()
+        return '%d-W%02d' % (iso[0], iso[1])
+    except Exception:
+        return date_str
+
+
 def build():
     src = find_latest_todo()
     if not src:
@@ -54,7 +67,8 @@ def build():
     date, sections = parse_md(src)
     with open(TEMPLATE, encoding='utf-8') as f:
         html = f.read()
-    payload = json.dumps({'date': date, 'today': sections['今日待办'], 'week': sections['本周待办']},
+    payload = json.dumps({'date': date, 'weekKey': iso_week(date),
+                          'today': sections['今日待办'], 'week': sections['本周待办']},
                          ensure_ascii=False)
     html = html.replace('const DATA = /*__DATA__*/ null;', 'const DATA = ' + payload + ';')
     html = html.replace('{{USER_NAME}}', USER_NAME)

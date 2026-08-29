@@ -104,7 +104,7 @@ html[data-theme="dark"] .hero .badge{color:#93c5fd;background:rgba(30,64,175,.26
 .filters .count{margin-left:auto;font-size:12px;color:var(--text-muted);white-space:nowrap;}
 
 /* 表格（模块内滚动条） */
-.tbl-wrap{overflow:auto;max-height:360px;border:1px solid rgba(148,163,184,.14);border-radius:.8rem;}
+.tbl-wrap{overflow:auto;max-height:520px;border:1px solid rgba(148,163,184,.14);border-radius:.8rem;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{position:sticky;top:0;z-index:1;background:var(--soft-blue);backdrop-filter:blur(6px);}
 th{color:var(--text-strong);font-weight:700;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
@@ -123,6 +123,10 @@ td.co{font-weight:650;color:var(--text-strong);}
 .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:1.5;}
 .tag.green{background:rgba(34,197,94,.13);color:#16a34a;}
 .tag.red{background:rgba(248,113,113,.14);color:#dc2626;}
+.tag.purple{background:rgba(168,85,247,.14);color:#9333ea;}
+.tag.cyan{background:rgba(6,182,212,.14);color:#0891b2;}
+.tag.yellow{background:rgba(234,179,8,.14);color:#ca8a04;}
+.tag.pink{background:rgba(236,72,153,.14);color:#db2777;}
 .tag.orange{background:rgba(251,146,60,.15);color:#ea580c;}
 .tag.blue{background:rgba(96,165,250,.15);color:#2563eb;}
 .tag.gray{background:rgba(148,163,184,.16);color:var(--text-muted);}
@@ -197,7 +201,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pct = (n, total) => total ? (n/total*100).toFixed(2) + '%' : '-';
 const isDead = st => !!st && st.endsWith('挂');
-const progressed = st => !!st && !st.endsWith('挂') && st !== '流程中';
+const progressed = st => !!st && !st.endsWith('挂') && st !== '简历筛选中';
 const linkHtml = l => l ? `<a href="${l}" target="_blank" rel="noopener">链接</a>` : '<span class="muted">-</span>';
 /* 新增岗位情报表格 */
 function tipsHtml(tips){
@@ -209,12 +213,13 @@ function tipsHtml(tips){
 
 function tagHtml(st){
   if (!st) return `<span class="tag gray">${esc(st)}</span>`;
-  if (/offer/i.test(st)) return `<span class="tag green">${esc(st)}</span>`;
+  if (st === 'offer') return `<span class="tag green">${esc(st)}</span>`;
   if (st.endsWith('挂')) return `<span class="tag red">${esc(st)}</span>`;
-  if (st.endsWith('过') || /已完成|完成/.test(st)) return `<span class="tag green">${esc(st)}</span>`;
-  if (/待参加/.test(st)) return `<span class="tag orange">${esc(st)}</span>`;
-  if (/已参加|流程中/.test(st) || /^(测评|简历|笔试)$/.test(st)) return `<span class="tag blue">${esc(st)}</span>`;
-  return `<span class="tag gray">${esc(st)}</span>`;
+  if (st === '简历筛选中') return `<span class="tag purple">${esc(st)}</span>`;
+  if (st === '测评中') return `<span class="tag cyan">${esc(st)}</span>`;
+  if (st === '笔试中') return `<span class="tag yellow">${esc(st)}</span>`;
+  if (st === '面试中') return `<span class="tag pink">${esc(st)}</span>`;
+  return `<span class="tag blue">${esc(st)}</span>`;
 }
 function priHtml(p){
   const cls = p==='最高'?'highest':p==='高'?'high':p==='一般'?'normal':'low';
@@ -225,7 +230,6 @@ function statCard(theme, num, lbl, q){
 }
 function sortRows(rows, key, asc){
   const priW = {'最高':0,'高':1,'一般':2,'低':3};
-  const w = key==='pri' ? {0:priW,1:0} : null;
   return [...rows].sort((a,b)=>{
     let av = a[key], bv = b[key];
     if (key==='pri') { av = priW[av] ?? 9; bv = priW[bv] ?? 9; }
@@ -240,6 +244,7 @@ function filterRows(rows, f){
     if (f.dir && f.dir!=='all' && r.dir !== f.dir) return false;
     if (f.batch && f.batch!=='all' && r.batch !== f.batch) return false;
     if (f.win && f.win!=='all' && r.win !== f.win) return false;
+    if (f.deadFilter && isDead2(r.st)) return false;
     if (f.q) { const hay = [r.co,r.job,r.loc,r.dir,r.batch,r.st,r.win].join(' '); if (!hay.includes(f.q)) return false; }
     return true;
   });
@@ -252,7 +257,8 @@ function renderTable(containerId, state, cols, rowHtml){
   const sorted = sortRows(rows, state.sort.key, state.sort.asc);
   const filterBar = state.fields.map(fd=>{
     if (fd.type==='search') return `<input class="search" id="${containerId}-q" type="text" placeholder="🔍 ${fd.ph || '搜索…'}">`;
-    if (fd.type==='select') return `<select id="${containerId}-${fd.key}"><option value="all">${fd.label}</option>${fd.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    if (fd.type==='select') return `<select id="${containerId}-${fd.key}"><option value="all">${fd.label}</option>${fd.opts.map(o=>`<option ${state.f[fd.key]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    if (fd.type==='checkbox') return `<label style="font-size:12px;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="${containerId}-${fd.key}" ${state.f[fd.key]?'checked':''}> ${fd.label}</label>`;
     return '';
   }).join('');
   const ths = cols.map(c=>{
@@ -266,6 +272,9 @@ function renderTable(containerId, state, cols, rowHtml){
   if (state.fields.some(f=>f.type==='search')) $(containerId+'-q').addEventListener('input', e=>{ state.f.q = e.target.value.trim(); renderTable(containerId,state,cols,rowHtml); });
   state.fields.filter(f=>f.type==='select').forEach(fd=>{
     $(containerId+'-'+fd.key).addEventListener('change', e=>{ state.f[fd.key] = e.target.value; renderTable(containerId,state,cols,rowHtml); });
+  });
+  state.fields.filter(f=>f.type==='checkbox').forEach(fd=>{
+    $(containerId+'-'+fd.key).addEventListener('change', e=>{ state.f[fd.key] = e.target.checked; renderTable(containerId,state,cols,rowHtml); });
   });
 }
 /* 表头排序：容器级事件委托，重渲染后依然有效 */
@@ -290,18 +299,22 @@ $('modalClose').addEventListener('click', closeModal);
 $('modalMask').addEventListener('click', e=>{ if (e.target === $('modalMask')) closeModal(); });
 
 /* ============ 数据准备 ============ */
-const D = window.DASH || {date:'', soe:{applied:[],pool:[],windows:[]}, prv:[]};
+const D = window.DASH || {date:'', soe:{applied:[]}, prv:[], soe_act:[]};
+
+/* 固定筛选状态（只保留关键流程节点，共 8 种） */
+const FILTER_STATES = ['简历筛选中','简历挂','测评中','笔试中','笔试挂','面试中','面试挂','offer'];
+const isDead2 = st => !!st && (st.endsWith('挂'));
 
 /* ============ 央国企 ============ */
-const soeAppliedState = { rows: D.soe.applied.map(r=>({...r})), f:{q:'',batch:'all',st:'all'}, sort:{key:'co',asc:true},
+const soeAppliedState = { rows: D.soe.applied.map(r=>({...r})), f:{q:'',batch:'all',st:'all',deadFilter:false}, sort:{key:'co',asc:true},
   fields:[
     {type:'search', ph:'搜索公司 / 岗位 / 地点…'},
     {type:'select', key:'batch', label:'全部批次', opts:[...new Set(D.soe.applied.map(r=>r.batch))].sort()},
-    {type:'select', key:'st', label:'全部状态', opts:[...new Set(D.soe.applied.map(r=>r.st))].sort()}
+    {type:'select', key:'st', label:'全部状态', opts:FILTER_STATES},
+    {type:'checkbox', key:'deadFilter', label:'不看已终止的流程'}
   ]};
-/* 近期开闸 · 行动清单 = 未投递且网申窗口在近期（8-9月/9月/9-10月）的计划投公司 */
-const SOE_ACT = ['8-9月', '9月', '9-10月'];
-const soeActNowState = { rows: D.soe.pool.filter(r=>SOE_ACT.includes(r.win)).map(r=>({...r})), f:{q:''}, sort:{key:'co',asc:true},
+/* 近期开闸 · 行动清单 = 新增岗位情报(央国企)中已开放网申的岗位，标注截止日期 */
+const soeActNowState = { rows: (D.soe_act||[]).map(r=>({...r})), f:{q:''}, sort:{key:'co',asc:true},
   fields:[
     {type:'search', ph:'搜索公司 / 地点…'}
   ]};
@@ -311,9 +324,9 @@ function renderSoe(){
   const total = applied.length;
   const dead = applied.filter(r=>isDead(r.st)).length;
   const pro = applied.filter(r=>progressed(r.st)).length;
-  const meet = applied.filter(r=>/笔试|测评/.test(r.st) && !isDead(r.st)).length;
-  const face = applied.filter(r=>/一面|二面|三面|offer/.test(r.st) && !isDead(r.st)).length;
-  const exam = applied.filter(r=>r.st==='笔试待参加').length;
+  const meet = applied.filter(r=>['测评中','笔试中'].includes(r.st) && !isDead(r.st)).length;
+  const face = applied.filter(r=>['面试中'].includes(r.st) && !isDead(r.st)).length;
+  const exam = applied.filter(r=>r.st==='笔试中').length;
   const offerN = applied.filter(r=>r.st==='offer').length;
   const actNow = soeActNowState.rows.length;
   const tipsDate = D.tips_date || '最新';
@@ -342,8 +355,8 @@ function renderSoe(){
       ${statCard('green', pro, '简历通过', 'soe:pro')}
       ${statCard('red', dead, '已挂（终态）', 'soe:dead')}
       ${statCard('orange', total-dead, '进行中', 'soe:active')}
-      ${statCard('orange', exam, '笔试待参加', 'soe:exam')}
-      ${statCard('red', offerN, 'Offer', 'soe:offer')}
+      ${statCard('orange', exam, '笔试中', 'soe:exam')}
+      ${statCard('green', offerN, 'Offer', 'soe:offer')}
     </div>
     <div class="grid">
       <div class="box">
@@ -370,7 +383,7 @@ function renderSoe(){
         <div id="soe-actnow-table"></div>
       </div>
       <div class="box wide">
-        <h3>新增岗位情报 · ${tipsDate} 筛选（央国企/央企控股）</h3>
+        <h3>新增岗位情报 · 计划投递（央国企 · ${tipsDate}）</h3>
         ${tipsHtml(D.soe_tips||[])}
       </div>
     </div>`;
@@ -379,17 +392,18 @@ function renderSoe(){
     [ {key:'co',label:'公司'}, {key:'batch',label:'批次'}, {key:'loc',label:'地点'}, {key:'pri',label:'优先级'}, {key:'job',label:'岗位'}, {key:'st',label:'状态'}, {key:'link',label:'入口'} ],
     r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.batch||'-')}</td><td>${esc(r.loc||'-')}</td><td>${priHtml(r.pri||'-')}</td><td>${esc(r.job||'-')}</td><td>${tagHtml(r.st)}</td><td>${linkHtml(r.link)}</td></tr>`);
   renderTable('soe-actnow-table', soeActNowState,
-    [ {key:'co',label:'公司'}, {key:'win',label:'预计网申时间'}, {key:'loc',label:'地点'}, {key:'link',label:'官网'} ],
-    r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.win||'-')}</td><td>${esc(r.loc||'-')}</td><td>${linkHtml(r.link)}</td></tr>`);
+    [ {key:'co',label:'公司'}, {key:'deadline',label:'截止日期'}, {key:'loc',label:'地点'}, {key:'job',label:'岗位'}, {key:'link',label:'入口'} ],
+    r=>`<tr><td class="co">${esc(r.co)}</td><td>${esc(r.deadline||'-')}</td><td>${esc(r.loc||'-')}</td><td>${esc(r.job||'-')}</td><td>${linkHtml(r.link)}</td></tr>`);
 }
 
 /* ============ 私企 ============ */
-const prvState = { rows: D.prv.map(r=>({...r})), f:{q:'',st:'all',dir:'all',batch:'all'}, sort:{key:'co',asc:true},
+const prvState = { rows: D.prv.map(r=>({...r})), f:{q:'',st:'all',dir:'all',batch:'all',deadFilter:false}, sort:{key:'co',asc:true},
   fields:[
     {type:'search', ph:'搜索公司 / 岗位 / 地点…'},
     {type:'select', key:'dir', label:'全部方向', opts:[...new Set(D.prv.map(r=>r.dir))].sort()},
     {type:'select', key:'batch', label:'全部批次', opts:[...new Set(D.prv.map(r=>r.batch))].sort()},
-    {type:'select', key:'st', label:'全部状态', opts:[...new Set(D.prv.map(r=>r.st))].sort()}
+    {type:'select', key:'st', label:'全部状态', opts:FILTER_STATES},
+    {type:'checkbox', key:'deadFilter', label:'不看已终止的流程'}
   ]};
 
 function renderPrv(){
@@ -397,9 +411,9 @@ function renderPrv(){
   const total = all.length;
   const dead = all.filter(r=>isDead(r.st)).length;
   const pro = all.filter(r=>progressed(r.st)).length;
-  const meet = all.filter(r=>/测评|笔试/.test(r.st) && !isDead(r.st)).length;
-  const face = all.filter(r=>/一面|二面|三面|offer/.test(r.st) && !isDead(r.st)).length;
-  const exam = all.filter(r=>r.st==='笔试待参加').length;
+  const meet = all.filter(r=>['测评中','笔试中'].includes(r.st) && !isDead(r.st)).length;
+  const face = all.filter(r=>['面试中'].includes(r.st) && !isDead(r.st)).length;
+  const exam = all.filter(r=>r.st==='笔试中').length;
   const offerN = all.filter(r=>r.st==='offer').length;
   const tipsDate = D.tips_date || '最新';
 
@@ -427,8 +441,8 @@ function renderPrv(){
       ${statCard('green', pro, '简历通过', 'prv:pro')}
       ${statCard('red', dead, '已挂（终态）', 'prv:dead')}
       ${statCard('orange', total-dead, '进行中', 'prv:active')}
-      ${statCard('orange', exam, '笔试待参加', 'prv:exam')}
-      ${statCard('red', offerN, 'Offer', 'prv:offer')}
+      ${statCard('orange', exam, '笔试中', 'prv:exam')}
+      ${statCard('green', offerN, 'Offer', 'prv:offer')}
     </div>
     <div class="grid">
       <div class="box">
@@ -451,7 +465,7 @@ function renderPrv(){
         <div id="prv-table"></div>
       </div>
       <div class="box wide">
-        <h3>新增岗位情报 · ${tipsDate} 筛选（私企）</h3>
+        <h3>新增岗位情报 · 计划投递（私企 · ${tipsDate}）</h3>
         ${tipsHtml(D.prv_tips||[])}
       </div>
     </div>`;
@@ -470,14 +484,14 @@ function detailRowsFor(q){
     if (kind==='pro') return {title:'央国企 · 简历通过', rows: rows.filter(r=>progressed(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态'],['link','入口']]};
     if (kind==='dead') return {title:'央国企 · 已挂', rows: rows.filter(r=>isDead(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态']]};
     if (kind==='active') return {title:'央国企 · 进行中', rows: rows.filter(r=>!isDead(r.st)), cols:[['co','公司'],['loc','地点'],['job','岗位'],['st','状态']]};
-    if (kind==='exam') return {title:'央国企 · 笔试待参加', rows: rows.filter(r=>r.st==='笔试待参加'), cols:[['co','公司'],['loc','地点'],['job','岗位'],['link','入口']]};
+    if (kind==='exam') return {title:'央国企 · 笔试中', rows: rows.filter(r=>r.st==='笔试中'), cols:[['co','公司'],['loc','地点'],['job','岗位'],['link','入口']]};
     if (kind==='offer') return {title:'央国企 · Offer', rows: rows.filter(r=>r.st==='offer'), cols:[['co','公司'],['loc','地点'],['job','岗位']]};
   }
   if (kind==='total') return {title:'私企 · 全部投递', rows, cols:[['co','公司'],['dir','方向'],['batch','批次'],['loc','地点'],['st','状态'],['link','入口']]};
   if (kind==='dead') return {title:'私企 · 已挂', rows: rows.filter(r=>isDead(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态']]};
   if (kind==='pro') return {title:'私企 · 简历通过', rows: rows.filter(r=>progressed(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态'],['link','入口']]};
   if (kind==='active') return {title:'私企 · 进行中', rows: rows.filter(r=>!isDead(r.st)), cols:[['co','公司'],['dir','方向'],['batch','批次'],['st','状态']]};
-  if (kind==='exam') return {title:'私企 · 笔试待参加', rows: rows.filter(r=>r.st==='笔试待参加'), cols:[['co','公司'],['dir','方向'],['job','岗位'],['link','入口']]};
+  if (kind==='exam') return {title:'私企 · 笔试中', rows: rows.filter(r=>r.st==='笔试中'), cols:[['co','公司'],['dir','方向'],['job','岗位'],['link','入口']]};
   if (kind==='offer') return {title:'私企 · Offer', rows: rows.filter(r=>r.st==='offer'), cols:[['co','公司'],['dir','方向'],['job','岗位']]};
   return null;
 }

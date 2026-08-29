@@ -8,7 +8,7 @@
 
 数据源（固定）：
   05_选岗老师/数据/秋招央国企岗位投递表.xlsx    （sheet: 央国企岗位投递表）
-  05_选岗老师/数据/秋招私企投递记录表.xlsx      （sheet: 算子方向 / C++方向）
+  05_选岗老师/数据/秋招私企投递记录表.xlsx      （sheet: 遍历全部 sheet，按用户求职方向划分）
 
 列名约定（勿改表头）：
   央国企：公司、网申日期、地点、岗位、是否投递、简历、笔试、一面、二面、三面、offer、链接、优先级、批次
@@ -16,7 +16,9 @@
 
 状态推导：按 offer→三面→二面→一面→笔试→测评→简历 取最深非空阶段；
           阶段值：是→阶段名；通过→阶段+过；挂→阶段+挂（任何阶段"挂"=终态）。
-是否投递：是→投递明细（看板"已投"）；非是/空→央国企按窗口归入"近期开闸·行动清单"（8-9月/9月/9-10月），私企不再展示关注池。
+投递明细：是否投递=是（投递表只记录已正式投递的岗位，计划投递统一放新增岗位情报）。
+行动清单：'近期开闸·行动清单' = 新增岗位情报(央国企)中已开放网申的岗位（截止窗口含'网申中'），标注截止日期。
+计划投递：'新增岗位情报' = 全部未投递的适合岗位（央国企/私企），按匹配度排序、持续累积、不重复不删除（已投递则移入投递明细）。
 
 输出：05_选岗老师/可视化/投递看板.html（覆盖）
 """
@@ -58,20 +60,40 @@ def combo(stage, val):
     return stage + v
 
 
+def normalize_status(st):
+    """把原始状态值归一化为筛选器使用的标准状态名（只允许 8 种）"""
+    mapping = {
+        '流程中': '简历筛选中',
+        '简历过': '测评中',
+        '简历筛选中': '简历筛选中',
+        '简历挂': '简历挂',
+        '测评': '测评中',
+        '测评中': '测评中',
+        '笔试已完成': '笔试中',
+        '笔试中': '笔试中',
+        '笔试挂': '笔试挂',
+        '一面': '面试中',
+        '二面': '面试中',
+        '三面': '面试中',
+        'offer': 'offer',
+    }
+    return mapping.get(st, '简历筛选中')  # 未知状态默认归为简历筛选中
+
+
 def soe_status(row):
     for stage in ('offer', '三面', '二面', '一面', '笔试', '简历'):
         s = combo(stage, row.get(stage))
         if s:
-            return s
-    return '流程中'
+            return normalize_status(s)
+    return normalize_status('流程中')
 
 
 def prv_status(row):
     for stage in ('offer', '三面', '二面', '一面', '笔试', '测评', '简历'):
         s = combo(stage, row.get(stage))
         if s:
-            return s
-    return '流程中'
+            return normalize_status(s)
+    return normalize_status('流程中')
 
 
 def window_of(d):
@@ -177,7 +199,7 @@ def load_prv(path):
                 rec['st'] = prv_status(d)
                 out.append(rec)
             else:
-                pool.append(rec)   # 未投递 → 关注池（AI推荐）
+                pool.append(rec)
     wb.close()
     return out, pool
 
@@ -185,8 +207,24 @@ def load_prv(path):
 TIPS_KEYS = ('公司', '性质', '届别', '岗位', '地点', '截止窗口', '匹配度', '备注', '入口')
 
 
+def is_open(win):
+    """判定岗位是否已开放网申。
+
+    规则（用户 2026-08-29 确认）：
+      - '截止窗口'含'网申中' → 已开放
+      - 含'未开放'或其他明确未开放描述 → 未开放
+      - 空/无法判定 → 视为已开放（宁可出错不可遗漏）
+    由选岗老师维护时把'截止窗口'列写规范（'网申中·…'/'未开放·…'）。
+    """
+    s = norm_cell(win)
+    if not s:
+        return True
+    return '网申中' in s
+
+
 def load_jobtips(path):
-    """读 新增岗位情报.xlsx：分类列=央国企→soe 模块，私企→prv 模块；文件缺失时返回空（兼容开源版初始状态）。"""
+    """读 新增岗位情报.xlsx：分类列=央国企→soe 模块，私企→prv 模块；文件缺失时返回空（兼容开源版初始状态）。
+    每条记录附 open 标记（是否已开放网申），供'近期开闸·行动清单'使用。"""
     if not os.path.exists(path):
         return [], []
     import openpyxl
@@ -206,6 +244,7 @@ def load_jobtips(path):
         if not co:
             continue
         rec = {k: norm_cell(d.get(k)) for k in TIPS_KEYS}
+        rec['open'] = is_open(rec['截止窗口'])
         (soe if norm_cell(d.get('分类')) == '央国企' else prv).append(rec)
     return soe, prv
 
@@ -227,6 +266,15 @@ def main():
     prv, prv_pool = load_prv(os.path.join(DATA_DIR, PRV_FILE))
     soe_tips, prv_tips = load_jobtips(os.path.join(TIP_DIR, TIPS_FILE))
 
+    # 近期开闸·行动清单 = 新增岗位情报(央国企)中已开放网申的岗位，标注截止窗口
+    soe_act = [{
+        'co': r['公司'],
+        'deadline': r['截止窗口'],
+        'loc': r['地点'],
+        'job': r['岗位'],
+        'link': r['入口'],
+    } for r in soe_tips if r['open']]
+
     data = {
         'date': datetime.date.today().strftime('%Y-%m-%d'),
         'soe': {'applied': soe_applied, 'pool': soe_pool, 'windows': soe_windows},
@@ -234,6 +282,7 @@ def main():
         'prv_pool': prv_pool,
         'soe_tips': soe_tips,
         'prv_tips': prv_tips,
+        'soe_act': soe_act,
         'tips_date': tips_date(),
     }
     payload = json.dumps(data, ensure_ascii=False, indent=1).replace('</', '<\\/')
@@ -248,9 +297,8 @@ def main():
 
     total_prv = len(prv)
     dead_prv = sum(1 for r in prv if r['st'].endswith('挂'))
-    act_now = sum(1 for r in soe_pool if r['win'] in ('8-9月', '9月', '9-10月'))
     print('[OK] 投递看板已生成: %s' % OUT)
-    print('     央国企: 已投 %d 家, 计划投 %d 家, 近期开闸行动清单 %d 家' % (len(soe_applied), len(soe_pool), act_now))
+    print('     央国企: 已投 %d 家, 新增岗位情报(计划投递) %d 家, 近期开闸行动清单 %d 家' % (len(soe_applied), len(soe_tips), len(soe_act)))
     print('     私企  : 共 %d 条, 已挂 %d 条' % (total_prv, dead_prv))
     print('     新增岗位情报: 央国企 %d 条, 私企 %d 条' % (len(soe_tips), len(prv_tips)))
 
